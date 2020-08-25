@@ -37,14 +37,19 @@
 typedef struct btrie_collapsed_node *btrie;
 
 void drop_tree(btrie *, void (*)(void *));
+
 void add_route(btrie *, uint32_t *, unsigned char, void *);
+
 void add_route_ipv4(btrie *, struct in_addr *, unsigned char, void *);
+
 void add_route_ipv6(btrie *, struct in6_addr *, unsigned char, void *);
-int del_route_ipv4(btrie *, struct in_addr *, unsigned char,
-                   void (*)(void *));
-int del_route_ipv6(btrie *, struct in6_addr *, unsigned char,
-                   void (*)(void *));
+
+int del_route_ipv4(btrie *, struct in_addr *, unsigned char, void (*)(void *));
+
+int del_route_ipv6(btrie *, struct in6_addr *, unsigned char, void (*)(void *));
+
 void *find_bpm_route_ipv4(btrie *tree, struct in_addr *a, unsigned char *);
+
 void *find_bpm_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char *);
 
 #endif

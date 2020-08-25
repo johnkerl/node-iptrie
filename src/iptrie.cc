@@ -30,6 +30,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// ================================================================
+// This wraps the pure-C btrie.cc impl and exposes it to the Node API.
+// ================================================================
+
 #include "btrie.h"
 
 #include <v8.h>
@@ -42,8 +46,8 @@ using namespace node;
 class IPTrie : public ObjectWrap {
   public:
     static Persistent<FunctionTemplate> s_ct;
-    static void
-    Initialize(v8::Local<v8::Object> target) {
+
+    static void Initialize(v8::Local<v8::Object> target) {
       Isolate *isolate = target->GetIsolate();
       HandleScope scope(isolate);
 
@@ -57,9 +61,8 @@ class IPTrie : public ObjectWrap {
       NODE_SET_PROTOTYPE_METHOD(t, "del", Del);
       NODE_SET_PROTOTYPE_METHOD(t, "find", Find);
 
-
       target->Set(isolate->GetCurrentContext(), name, t->GetFunction(isolate->GetCurrentContext()).ToLocalChecked())
-#ifdef NODE_VERSION_AT_LEAST(14, 0, 0)
+#if NODE_VERSION_AT_LEAST(14, 0, 0)
         .ToChecked();
 #else
         .Check();
@@ -79,6 +82,7 @@ class IPTrie : public ObjectWrap {
     }
 
     IPTrie() : tree4(NULL), tree6(NULL) { }
+
     ~IPTrie() {
       drop_tree(&tree4, delete_baton);
       drop_tree(&tree6, delete_baton);
@@ -160,7 +164,7 @@ class IPTrie : public ObjectWrap {
 
     static Local <String> CheckedString(Isolate *isolate, const char *str) {
       return String::NewFromUtf8(isolate, "IPTrie", v8::NewStringType::kNormal)
-#ifdef NODE_VERSION_AT_LEAST(14, 0, 0)
+#if NODE_VERSION_AT_LEAST(14, 0, 0)
         .ToLocalChecked()
 #endif
               ;

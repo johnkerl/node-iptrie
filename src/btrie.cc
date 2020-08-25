@@ -41,6 +41,13 @@
 // BITS should be either 32 or 128
 #define MAXBITS 128
 
+// ================================================================
+// This is a pure-C patricia-trie implementation. The iptrie.cc wrapper exposes
+// this to Node.
+// ================================================================
+
+// ================================================================
+// ----------------------------------------------------------------
 typedef struct btrie_collapsed_node {
   struct btrie_collapsed_node *bit[2];
   void *data;
@@ -52,8 +59,10 @@ typedef struct btrie_collapsed_node {
 #endif
 } btrie_node;
 
+// ----------------------------------------------------------------
 #define BIT_AT(k,b) ((k[(b-1)/32] >> (31 - ((b-1)%32))) & 0x1)
 
+// ----------------------------------------------------------------
 static void drop_node(btrie_node *node, void (*f)(void *)) {
   if(node == NULL) return;
   if(node->bit[0]) drop_node(node->bit[0], f);
@@ -64,12 +73,17 @@ static void drop_node(btrie_node *node, void (*f)(void *)) {
 #endif
   free(node);
 }
+
+// ----------------------------------------------------------------
 void drop_tree(btrie *tree, void (*f)(void *)) {
   drop_node(*tree, f);
   *tree = NULL;
 }
-static inline int match_bpm(btrie_node *node,
-                            uint32_t *key, unsigned char match_len) {
+
+// ----------------------------------------------------------------
+static inline int match_bpm(btrie_node *node, uint32_t *key,
+  unsigned char match_len)
+{
   int i, m = (match_len-1)/32;
   if(match_len <= 0) return 1;
   for(i=0;i<=m;i++) {
@@ -85,9 +99,10 @@ static inline int match_bpm(btrie_node *node,
   return 1;
 }
 
+// ----------------------------------------------------------------
 static inline int calc_bits_in_commons(btrie_node *node,
-                                       uint32_t *key,
-                                       unsigned char match_len) {
+  uint32_t *key, unsigned char match_len)
+{
  /* Largest common mask */
   int i;
   uint32_t prefix_len = 0;
@@ -112,9 +127,10 @@ static inline int calc_bits_in_commons(btrie_node *node,
   return prefix_len;
 }
 
-static int
-del_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
-          void (*f)(void *)) {
+// ----------------------------------------------------------------
+static int del_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
+  void (*f)(void *))
+{
   btrie_node *parent = NULL, *node;
   node = *tree;
   while(node && node->prefix_len <= prefix_len &&
@@ -141,9 +157,11 @@ del_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
   }
   return 0;
 }
-static int
-find_bpm_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
-               btrie_node **rnode, btrie_node **explicit_container) {
+
+// ----------------------------------------------------------------
+static int find_bpm_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
+  btrie_node **rnode, btrie_node **explicit_container)
+{
   int stack_pos = -1, exact = 0;
   btrie_node *pstack[MAXBITS], *parent = NULL, *node;
   node = *tree;
@@ -170,8 +188,9 @@ find_bpm_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
     *explicit_container = stack_pos >= 0 ? pstack[stack_pos] : NULL;
   return exact;
 }
-void *
-find_bpm_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char *pl) {
+
+// ----------------------------------------------------------------
+void * find_bpm_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char *pl) {
   btrie_node *node = NULL;
   uint32_t ia[4], i;
   memcpy(ia, &a->s6_addr, sizeof(ia));
@@ -181,8 +200,9 @@ find_bpm_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char *pl) {
   if(node && node->data) return node->data;
   return NULL;
 }
-void *
-find_bpm_route_ipv4(btrie *tree, struct in_addr *a, unsigned char *pl) {
+
+// ----------------------------------------------------------------
+void * find_bpm_route_ipv4(btrie *tree, struct in_addr *a, unsigned char *pl) {
   btrie_node *node = NULL;
   uint32_t ia = ntohl(a->s_addr);
   find_bpm_route(tree, &ia, 32, NULL, &node);
@@ -191,23 +211,27 @@ find_bpm_route_ipv4(btrie *tree, struct in_addr *a, unsigned char *pl) {
   return NULL;
 }
 
-int
-del_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char prefix_len,
-               void (*f)(void *)) {
+// ----------------------------------------------------------------
+int del_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char prefix_len,
+  void (*f)(void *))
+{
   uint32_t ia[4], i;
   memcpy(ia, &a->s6_addr, sizeof(ia));
   for(i=0;i<4;i++) ia[i] = ntohl(ia[i]);
   return del_route(tree, ia, prefix_len, f);
 }
-int
-del_route_ipv4(btrie *tree, struct in_addr *a, unsigned char prefix_len,
-               void (*f)(void *)) {
+
+int del_route_ipv4(btrie *tree, struct in_addr *a, unsigned char prefix_len,
+  void (*f)(void *))
+{
   uint32_t ia = ntohl(a->s_addr);
   return del_route(tree, &ia, prefix_len, f);
 }
 
+// ----------------------------------------------------------------
 void add_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
-               void *data) {
+  void *data)
+{
 #ifdef DEBUG_BTRIE
   char ipb[128];
 #define DA(n, pl, m) do { \
@@ -290,16 +314,21 @@ void add_route(btrie *tree, uint32_t *key, unsigned char prefix_len,
   }
 }
 
+// ----------------------------------------------------------------
 void add_route_ipv4(btrie *tree, struct in_addr *a,
-                    unsigned char prefix_len, void *data) {
+  unsigned char prefix_len, void *data)
+{
   uint32_t ia = ntohl(a->s_addr), mask;
   assert(prefix_len <= 32);
   mask = (prefix_len == 32) ? 0xffffffff : ~(0xffffffff >> prefix_len);
   ia &= mask;
   add_route(tree, &ia, prefix_len, data);
 }
-void add_route_ipv6(btrie *tree, struct in6_addr *a,
-                    unsigned char prefix_len, void *data) {
+
+// ----------------------------------------------------------------
+void add_route_ipv6(btrie *tree, struct in6_addr *a, unsigned char prefix_len,
+  void *data)
+{
   uint32_t ia[4], i, mask;
   int splen;
   memcpy(ia, &a->s6_addr, sizeof(ia));
