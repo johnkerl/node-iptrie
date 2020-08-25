@@ -63,12 +63,12 @@ typedef struct btrie_collapsed_node {
 
 // ----------------------------------------------------------------
 static void drop_node(btrie_node *node, void (*f)(void *)) {
-  if(node == NULL) return;
-  if(node->bit[0]) drop_node(node->bit[0], f);
-  if(node->bit[1]) drop_node(node->bit[1], f);
-  if(node->data && f) f(node->data);
+  if (node == NULL) return;
+  if (node->bit[0]) drop_node(node->bit[0], f);
+  if (node->bit[1]) drop_node(node->bit[1], f);
+  if (node->data && f) f(node->data);
 #ifdef DEBUG_BTRIE
-  if(node->long_desc) free(node->long_desc);
+  if (node->long_desc) free(node->long_desc);
 #endif
   free(node);
 }
@@ -84,15 +84,16 @@ static inline int match_bpm(btrie_node *node, uint32_t *key,
   unsigned char match_len)
 {
   int i, m = (match_len-1)/32;
-  if(match_len <= 0) return 1;
-  for(i=0;i<=m;i++) {
-    if(i<m) { /* we're matching a whole word */
+  if (match_len <= 0) return 1;
+  for (i = 0; i <= m; i++) {
+    if (i < m) { /* we're matching a whole word */
       if(node->bits[i] != key[i]) return 0;
-    }
-    else {
+    } else {
       uint32_t mask = ((match_len % 32) == 0) ? 0xffffffff :
         ~(0xffffffff >> (match_len % 32));
-      if((node->bits[i] & mask) != (key[i] & mask)) return 0;
+      if((node->bits[i] & mask) != (key[i] & mask)) {
+        return 0;
+      }
     }
   }
   return 1;
