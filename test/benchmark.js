@@ -9,6 +9,8 @@ fs.readFile(process.argv[2], 'utf-8', function(err, data) {
   var lines = data.split(/\n/);
   var start = +(new Date());
   for (var i=0; i<lines.length; i++) {
+    // E.g. "1.2.3.4/5 foo" -> m[1] = "1.2.3.4", m[2] = "5", m[3] = "foo"
+    // The if(m) keeps only lines with slashes in them, i.e. ignores exact IPs.
     var m = /^([^\/]+)\/(\d+)\s+(.*)/.exec(lines[i]);
     if(m) {
       try {
